@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Result Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #b0cdfc;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgb(247, 244, 244);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        form {
+            display: grid;
+            gap: 10px;
+            margin-bottom: 30px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #2980b9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #3498db;
+            color: white;
+        }
+        .actions button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 0 5px;
+        }
+        .edit { color: #f39c12; }
+        .delete { color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Simple Student Result Manager</h1>
+
+        <h2>Add / Edit Student</h2>
+        <form id="studentForm">
+            <input type="text" id="name" placeholder="Student Name" required>
+            <input type="text" id="roll" placeholder="Roll Number" required>
+            <input type="number" id="marks" placeholder="Total Marks (out of 500)" min="0" max="500" required>
+            <input type="hidden" id="editIndex" value="-1">
+            <button type="submit">Save Student</button>
+        </form>
+
+        <h2>All Results</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Roll No.</th>
+                    <th>Marks</th>
+                    <th>Percentage</th>
+                    <th>Grade</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="resultsBody"></tbody>
+        </table>
+    </div>
+
+    <script>
+        const form = document.getElementById('studentForm');
+        const nameInput = document.getElementById('name');
+        const rollInput = document.getElementById('roll');
+        const marksInput = document.getElementById('marks');
+        const editIndexInput = document.getElementById('editIndex');
+        const tbody = document.getElementById('resultsBody');
+
+        let students = JSON.parse(localStorage.getItem('students')) || [];
+
+        function getGrade(percent) {
+            if (percent >= 90) return 'A+';
+            if (percent >= 80) return 'A';
+            if (percent >= 70) return 'B';
+            if (percent >= 60) return 'C';
+            if (percent >= 50) return 'D';
+            return 'F';
+        }
+
+        function renderTable() {
+            tbody.innerHTML = '';
+            students.forEach((student, index) => {
+                const percent = (student.marks / 500 * 100).toFixed(2);
+                const grade = getGrade(percent);
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${student.name}</td>
+                    <td>${student.roll}</td>
+                    <td>${student.marks}</td>
+                    <td>${percent}%</td>
+                    <td>${grade}</td>
+                    <td class="actions">
+                        <button class="edit" onclick="editStudent(${index})">✏️</button>
+                        <button class="delete" onclick="deleteStudent(${index})">🗑️</button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const student = {
+                name: nameInput.value,
+                roll: rollInput.value,
+                marks: parseInt(marksInput.value)
+            };
+
+            const index = parseInt(editIndexInput.value);
+            if (index === -1) {
+                students.push(student);
+            } else {
+                students[index] = student;
+                editIndexInput.value = -1;
+            }
+
+            localStorage.setItem('students', JSON.stringify(students));
+            renderTable();
+            form.reset();
+        });
+
+        window.editStudent = (index) => {
+            const student = students[index];
+            nameInput.value = student.name;
+            rollInput.value = student.roll;
+            marksInput.value = student.marks;
+            editIndexInput.value = index;
+        };
+
+        window.deleteStudent = (index) => {
+            if (confirm('Delete this student record?')) {
+                students.splice(index, 1);
+                localStorage.setItem('students', JSON.stringify(students));
+                renderTable();
+            }
+        };
+
+        
+        renderTable();
+    </script>
+</body>
+</html>
